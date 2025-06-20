@@ -1,0 +1,84 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Status {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                String      @id @default(cuid())
+  name              String?
+  email             String      @unique
+  password          String
+  role              Role        @default(USER)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  createdInvitations Invitation[] @relation("CreatedInvitations") // Invitations créées par l'admin
+  createdByInvitation Invitation? @relation("UsedInvitation", fields: [invitationId], references: [id]) // Invitation qui a servi à créer ce compte
+  invitationId      String?
+  journeys          Journey[]
+  followedJourneys  Journey[]   @relation("UserFollowedJourneys") // Trajets suivis par l'utilisateur
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  email       String?
+  usesLeft    Int       @default(1)
+  maxUses     Int       @default(1)
+  expiresAt   DateTime
+  role        Role      @default(USER)
+  isFamilyCode Boolean   @default(false) // Indique si c'est un code famille réutilisable
+  createdBy   User      @relation("CreatedInvitations", fields: [createdById], references: [id])
+  createdById String
+  usedBy      User[]    @relation("UsedInvitation") // Users créés avec cette invitation
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Journey {
+  id          String   @id @default(cuid())
+  title       String
+  startDate   DateTime
+  endDate     DateTime?
+  status      Status   @default(SCHEDULED)
+  createdBy   User     @relation(fields: [userId], references: [id])
+  userId      String
+  currentStop Int      @default(0)
+  followers   User[]   @relation("UserFollowedJourneys")
+  stops       Stop[]
+  notes       String?  // Notes additionnelles sur le voyage
+  trainNumber String?  // Numéro du train
+  isPublic    Boolean  @default(false) // Si le trajet est visible publiquement
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Stop {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int
+  time      DateTime
+  actualTime DateTime? // Heure réelle de passage (vs heure prévue)
+  passed    Boolean  @default(false)
+  notes     String?  // Notes additionnelles sur l'arrêt
+  journey   Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  journeyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
