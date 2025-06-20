@@ -1,4 +1,4 @@
-// src/components/journey/real-time-journey-tracker.tsx
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -20,14 +20,12 @@ export function RealTimeJourneyTracker({ initialJourney }: RealTimeJourneyTracke
   const [progress, setProgress] = useState(0);
   const [timeToNextStop, setTimeToNextStop] = useState<string | null>(null);
 
-  // Utilisation du hook Socket.IO amélioré
   const { isConnected } = useJourneyUpdates({
     onJourneyUpdate: (updatedJourney) => {
       if (updatedJourney.id === journey.id) {
         console.log('Mise à jour en temps réel reçue:', updatedJourney);
         setJourney(updatedJourney);
         setIsRealTime(true);
-        // Réinitialiser l'indicateur après 2 secondes
         setTimeout(() => setIsRealTime(false), 2000);
       }
     },
@@ -54,7 +52,6 @@ export function RealTimeJourneyTracker({ initialJourney }: RealTimeJourneyTracke
     }
   });
 
-  // Calcul de la progression
   useEffect(() => {
     if (!journey.stops || journey.stops.length < 2) return;
     
@@ -66,19 +63,15 @@ export function RealTimeJourneyTracker({ initialJourney }: RealTimeJourneyTracke
       return;
     }
     
-    // Calcul du pourcentage de progression basé sur le temps écoulé
     const totalDuration = new Date(stops[stops.length - 1].time).getTime() - new Date(stops[0].time).getTime();
     const elapsedDuration = Date.now() - new Date(stops[0].time).getTime();
     
     const timeBasedProgress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
     
-    // Progression basée sur les arrêts déjà passés
     const stopsBasedProgress = (currentStop / (stops.length - 1)) * 100;
     
-    // Prendre la progression la plus pertinente
     setProgress(journey.status === 'COMPLETED' ? 100 : Math.max(timeBasedProgress, stopsBasedProgress));
     
-    // Calculer le temps jusqu'au prochain arrêt
     if (currentStop < stops.length - 1 && journey.status === 'ONGOING') {
       const nextStop = stops[currentStop + 1];
       const timeToNext = new Date(nextStop.time).getTime() - Date.now();

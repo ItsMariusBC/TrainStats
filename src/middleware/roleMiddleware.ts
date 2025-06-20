@@ -12,10 +12,8 @@ const protectedRoutes = [
 ];
 
 export async function roleMiddleware(request: NextRequest) {
-  // Récupérer le token et les informations de l'utilisateur
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   
-  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
   if (!token) {
     const url = new URL('/auth/login', request.url);
     url.searchParams.set('callbackUrl', request.url);
